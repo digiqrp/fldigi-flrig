@@ -1,0 +1,7 @@
+graphics/flrig-pixmaps.o: \
+ /home/mag/Projects/fldigi-flrig/src/graphics/pixmaps.cxx \
+ /usr/include/stdc-predef.h config.h
+
+/usr/include/stdc-predef.h:
+
+config.h:
