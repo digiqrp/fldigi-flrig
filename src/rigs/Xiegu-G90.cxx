@@ -2,7 +2,6 @@
 // Copyright (C) 2020
 //              David Freese, W1HKJ
 //              Mark Gregory, G4LCH
-//              Morgan Jones <me@numin.it>
 //
 // This file is part of flrig.
 //
@@ -25,26 +24,15 @@
 #include <iostream>
 #include <sstream>
 
-#include "gettext.h"
-
-//=============================================================================
-// IC-_g90
-/*
-
-*/
-
 const char Xiegu_G90name_[] = "Xiegu-G90";
 
-// these are only defined in this file
-// undef'd at end of file
+// these are only defined in this file undef'd at end of file
 
 #define NUM_MODES  5
 
-//static int mode_bwA[NUM_MODES] = {-1,-1,-1,-1,-1};
-//static int mode_bwB[NUM_MODES] = {-1,-1,-1,-1,-1};
+static int agcval = 0;
 
-enum {
-	LSB_g90, USB_g90, AM_g90, CW_g90, CWR_g90 };
+enum { LSB_g90, USB_g90, AM_g90, CW_g90, CWR_g90 };
 
 const char *Xiegu_G90modes_[] = {
 "LSB", "USB", "AM", "CW", "CW-R", NULL};
@@ -98,9 +86,7 @@ void RIG_Xiegu_G90::initialize()
 	btn_icom_select_10->deactivate();
 	btn_icom_select_11->deactivate();
 	btn_icom_select_12->deactivate();
-
-	btn_icom_select_13->copy_label(_("GEN"));
-	btn_icom_select_13->tooltip(_("General RX"));
+	btn_icom_select_13->deactivate();
 
 	choice_rTONE->deactivate();
 	choice_tTONE->deactivate();
@@ -108,7 +94,7 @@ void RIG_Xiegu_G90::initialize()
 }
 
 RIG_Xiegu_G90::RIG_Xiegu_G90() {
-	defaultCIV = 0x88;
+	defaultCIV = 0x70;
 	name_ = Xiegu_G90name_;
 	modes_ = Xiegu_G90modes_;
 	bandwidths_ = Xiegu_G90_ssb_bws;
@@ -119,7 +105,7 @@ RIG_Xiegu_G90::RIG_Xiegu_G90() {
 	comm_retries = 2;
 	comm_wait = 20;
 	comm_timeout = 50;
-	comm_echo = false;
+	comm_echo = true;
 	comm_rtscts = false;
 	comm_rtsplus = true;
 	comm_dtrplus = true;
@@ -133,15 +119,15 @@ RIG_Xiegu_G90::RIG_Xiegu_G90() {
 	has_power_out = true;
 	has_swr_control = true;
 
-	has_split = true;
-	has_split_AB = true;
+	has_split = false;
+	has_split_AB = false;
 
 	has_mode_control = true;
-	has_bandwidth_control = true;
+	has_bandwidth_control = false;
 
 	has_power_control = true;
 	has_volume_control = true;
-	has_sql_control = true;
+	has_sql_control = false;
 
 	has_noise_control = true;
 
@@ -159,66 +145,21 @@ RIG_Xiegu_G90::RIG_Xiegu_G90() {
 
 	has_band_selection = true;
 
-	has_compON = true;
+	has_compON = false;
 
-	has_nb_level = true;
+	has_nb_level = false;
 
 	precision = 1;
 	ndigits = 9;
 	A.filter = B.filter = 1;
 
-	def_freq = A.freq = 14070000;
+	def_freq = A.freq = 14074000;
 	def_mode = A.imode = 1;
 	def_bw = A.iBW = 0;
 
 	B.freq = 7070000;
 	B.imode = 1;
 	B.iBW = 0;
-
-//true
-	has_smeter = 
-	has_power_out = 
-	has_swr_control = 
-	has_split = 
-	has_split_AB = 
-	has_mode_control = 
-	has_bandwidth_control = 
-	has_power_control = 
-	has_volume_control = 
-	has_sql_control = 
-	has_noise_control = 
-	has_attenuator_control = 
-	has_preamp_control = 
-	has_ptt_control = 
-	has_tune_control = 
-	has_agc_control = 
-	has_extras = 
-	has_cw_wpm = 
-	has_cw_vol = 
-	has_band_selection = 
-	has_compON = 
-	has_nb_level = true;
-// false
-	CW_sense =
-	has_alc_control =
-	has_micgain_control =
-	has_ifshift_control = 
-	has_pbt_controls = 
-	has_rf_control = 
-	has_noise_reduction = 
-	has_noise_reduction_control = 
-	has_auto_notch = 
-	has_notch_control = 
-	has_cw_spot_tone = 
-	has_cw_qsk = 
-	has_vox_onoff = 
-	has_vox_gain = 
-	has_vox_anti = 
-	has_vox_hang = 
-	has_compression = 
-	has_vfo_adj = 
-	restore_mbw = 
-	has_xcvr_auto_on_off = false;
 
 };
 
@@ -350,7 +291,7 @@ int RIG_Xiegu_G90::get_split()
 	cmd.assign(pre_to);
 	cmd.append("\x0F");
 	cmd.append( post );
-	if (waitFOR(7, "get split")) {
+	if (waitFOR(9, "get split")) {
 		string resp = pre_fm;
 		resp.append("\x0F");
 		size_t p = replystr.find(resp);
@@ -375,6 +316,45 @@ void RIG_Xiegu_G90::set_PTT_control(int val)
 	ptt_ = val;
 	isett("set_PTT()");
 }
+
+void RIG_Xiegu_G90::tune_rig(int how)
+{
+    cout << "TUNE" << endl;
+    cmd = pre_to;
+    cmd.append("\x1c\x01");
+    switch (how) {
+        default:
+        case 0:
+            cmd += '\x00';
+            break;
+        case 1:
+            cmd += '\x01';
+            break;
+        case 2:
+            cmd += '\x02';
+            break;
+    }
+    cmd.append( post );
+    waitFB("tune rig");
+    ICtrace("tune rig", replystr);
+}
+
+int RIG_Xiegu_G90::get_tune()
+{
+    string resp;
+    string cstr = "\x1C\x01";
+    cmd.assign(pre_to).append(cstr).append(post);
+    resp.assign(pre_fm).append(cstr);
+    int val = tune_;
+    if (waitFOR(8, "get TUNE")) {
+        size_t p = replystr.rfind(resp);
+        if (p != string::npos)
+            val = replystr[p + 6];
+    }
+    return (tune_ = val);
+}
+
+
 
 void RIG_Xiegu_G90::set_modeA(int val)
 {
@@ -477,7 +457,6 @@ void RIG_Xiegu_G90::set_attenuator(int val)
    if (val) {
 		atten_level = 1;
 		atten_label("ATT", true);
-		preamp_label("PRE", false);
 	} else {
 		atten_level = 0;
 		atten_label("ATT", false);
@@ -491,28 +470,6 @@ void RIG_Xiegu_G90::set_attenuator(int val)
 	waitFB("set att");
 }
 
-int RIG_Xiegu_G90::get_attenuator()
-{
-	cmd = pre_to;
-	cmd += '\x11';
-	cmd.append( post );
-	string resp = pre_fm;
-	resp += '\x11';
-	if (waitFOR(7, "get ATT")) {
-		get_trace(2, "get_ATT()", str2hex(replystr.c_str(), replystr.length()));
-		size_t p = replystr.rfind(resp);
-		if (replystr[p+5] == 0x00) {
-			atten_level = 0;
-			atten_label("ATT", false);
-		} else {
-			atten_level = 1;
-			atten_label("ATT", true);
-			preamp_label("PRE", false);
-		}
-	}
-	return atten_level;
-}
-
 void RIG_Xiegu_G90::set_preamp(int val)
 {
 	cmd = pre_to;
@@ -521,7 +478,6 @@ void RIG_Xiegu_G90::set_preamp(int val)
 
 	if (val) {
 		preamp_label("PRE", true);
-		atten_label("ATT", false);
 		cmd += '\x01';
 	} else {
 		preamp_label("PRE", false);
@@ -548,11 +504,10 @@ int RIG_Xiegu_G90::get_preamp()
 		size_t p = replystr.rfind(resp);
 		if (p != string::npos)
 			preamp_level = replystr[p+6];
-		if (preamp_level == 1) {
-			preamp_label("PRE", true);
-			atten_label("ATT", false);
-		} else
-			preamp_label("PRE", false);
+		if (preamp_level == 1)
+			preamp_label("PRE ON", true);
+		else
+			preamp_label("PRE OFF", false);
 	}
 	return preamp_level;
 }
@@ -598,6 +553,14 @@ void RIG_Xiegu_G90::set_cw_wpm()
 	waitFB("SET cw wpm");
 }
 
+static int hexval(int hex)
+{
+	int val = 0;
+	val += 10 * ((hex >> 4) & 0x0F);
+	val += hex & 0x0F;
+	return val;
+}
+
 static char hexchr(int val)
 {
 	static char c;
@@ -607,26 +570,27 @@ static char hexchr(int val)
 
 struct meterpair {int mtr; float val;};
 
+// Exact power matches as verified with RIG
 static meterpair pwrtbl[] = { 
-{ 0, 1 },
-{ 13, 2 },
-{ 26, 3 },
-{ 40, 4 },
-{ 53, 5 },
-{ 67, 6 },
-{ 80, 7 },
-{ 93, 8 },
-{ 107, 9 },
-{ 121, 10 },
-{ 134, 11 },
-{ 147, 12 },
-{ 161, 13 },
-{ 174, 14 },
-{ 187, 15 },
-{ 201, 16 },
-{ 214, 17 },
-{ 228, 18 },
-{ 241, 19 },
+{ 13, 1 },
+{ 26, 2 },
+{ 39, 3 },
+{ 52, 4 },
+{ 65, 5 },
+{ 78, 6 },
+{ 92, 7 },
+{ 105, 8 },
+{ 118, 9 },
+{ 131, 10 },
+{ 144, 11 },
+{ 157, 12 },
+{ 170, 13 },
+{ 183, 14 },
+{ 200, 15 },
+{ 213, 16 },
+{ 226, 17 },
+{ 239, 18 },
+{ 251, 19 },
 { 255, 20 }
 };
 
@@ -685,6 +649,29 @@ void RIG_Xiegu_G90::get_pc_min_max_step(double &min, double &max, double &step)
 	min = 1; max = 20; step = 1;
 }
 
+/*
+1W = xFE xFE x88 xE0 x14 x0A x00 x00 xFD
+2W = xFE xFE x88 xE0 x14 x0A x00 x13 xFD
+3W = xFE xFE x88 xE0 x14 x0A x00 x26 xFD
+4W = xFE xFE x88 xE0 x14 x0A x00 x40 xFD
+5W = xFE xFE x88 xE0 x14 x0A x00 x53 xFD
+6W = xFE xFE x88 xE0 x14 x0A x00 x67 xFD
+7W = xFE xFE x88 xE0 x14 x0A x00 x80 xFD
+8W = xFE xFE x88 xE0 x14 x0A x00 x93 xFD
+9W = xFE xFE x88 xE0 x14 x0A x01 x07 xFD
+10W = xFE xFE x88 xE0 x14 x0A x01 x20 xFD
+11W = xFE xFE x88 xE0 x14 x0A x01 x34 xFD
+12W = xFE xFE x88 xE0 x14 x0A x01 x47 xFD
+13W = xFE xFE x88 xE0 x14 x0A x01 x61 xFD
+14W = xFE xFE x88 xE0 x14 x0A x01 x74 xFD
+15W = xFE xFE x88 xE0 x14 x0A x01 x87 xFD
+16W = xFE xFE x88 xE0 x14 x0A x02 x01 xFD
+17W = xFE xFE x88 xE0 x14 x0A x02 x14 xFD
+18W = xFE xFE x88 xE0 x14 x0A x02 x28 xFD
+19W = xFE xFE x88 xE0 x14 x0A x02 x41 xFD
+20W = xFE xFE x88 xE0 x14 x0A x02 x55 xFD
+*/
+
 int RIG_Xiegu_G90::get_power_out(void)
 {
 	string cstr = "\x15\x11";
@@ -693,19 +680,20 @@ int RIG_Xiegu_G90::get_power_out(void)
 	cmd = pre_to;
 	cmd.append(cstr);
 	cmd.append( post );
-	int mtr = 0;
-	if (waitFOR(9, "get power out")) {
+	int mtr= 0;
+	if (waitFOR(5, "get power out")) {
+	    cout << "GET PWR" << endl;
 		size_t p = replystr.rfind(resp);
 		if (p != string::npos) {
-			// Power is 10 * output in watts, as BCD
 			if (replystr[p + 7] == '\xFD') {
-				mtr = hexval(replystr[p + 6]);
+                mtr = ceil(fm_bcd(replystr.substr(p + 6), 1) );
 			} else {
-				mtr = 100 * hexval(replystr[p + 7]) + hexval(replystr[p + 6]);
+                mtr = ceil(fm_bcd(replystr.substr(p + 6), 1) );
+                mtr = mtr + ceil(fm_bcd(replystr.substr(p + 7), 1) )+100;
 			}
-			if (mtr < 0) mtr = 0;
 		}
 	}
+    mtr = (int)ceil(mtr / 10);
 	get_trace(2, "get_power_out()", str2hex(replystr.c_str(), replystr.length()));
 	return mtr;
 }
@@ -732,7 +720,7 @@ int RIG_Xiegu_G90::get_volume_control()
 	cmd = pre_to;
 	cmd.append(cstr);
 	cmd.append( post );
-	if (waitFOR(9, "get vol")) {
+	if (waitFOR(5, "get vol")) {
 		size_t p = replystr.rfind(resp);
 		if (p != string::npos) {
 			if (replystr[p + 7] == '\xFD') {
@@ -758,19 +746,6 @@ void RIG_Xiegu_G90::set_squelch(int val)
 	waitFB("set Sqlch");
 }
 
-/*
-OFF FE FE 88 E0 14 03 FD FE FE E0 88 14 03 00 FD 
-S1  FE FE 88 E0 14 03 FD FE FE E0 88 14 03 28 FD 
-S2  FE FE 88 E0 14 03 FD FE FE E0 88 14 03 56 FD 
-S3  FE FE 88 E0 14 03 FD FE FE E0 88 14 03 85 FD 
-S4  FE FE 88 E0 14 03 FD FE FE E0 88 14 03 01 13 FD 
-S5  FE FE 88 E0 14 03 FD FE FE E0 88 14 03 01 41 FD 
-S6  FE FE 88 E0 14 03 FD FE FE E0 88 14 03 01 70 FD 
-S7  FE FE 88 E0 14 03 FD FE FE E0 88 14 03 01 98 FD 
-S8  FE FE 88 E0 14 03 FD FE FE E0 88 14 03 02 26 FD 
-S9  FE FE 88 E0 14 03 FD FE FE E0 88 14 03 02 55 FD 
-*/
-
 int  RIG_Xiegu_G90::get_squelch()
 {
 	int val = progStatus.squelch;
@@ -780,17 +755,10 @@ int  RIG_Xiegu_G90::get_squelch()
 	cmd = pre_to;
 	cmd.append(cstr);
 	cmd.append(post);
-	if (waitFOR(9, "get squelch")) {
+	if (waitFOR(5, "get squelch")) {
 		size_t p = replystr.rfind(resp);
-		if (p != string::npos) {
-			if (replystr[p + 7] == '\xFD') {
-				val = hexval(replystr[p + 6]);
-			} else {
-				val = 100 * hexval(replystr[p + 6]) + hexval(replystr[p + 7]);
-			}
-		}
-		val *= 100;
-		val /= 255;
+		if (p != string::npos)
+			val = num100(replystr.substr(p+6));
 	}
 	get_trace(2, "get_squelch()", str2hex(replystr.c_str(), replystr.length()));
 	return val;
@@ -853,47 +821,26 @@ int RIG_Xiegu_G90::get_smeter()
 	return mtr;
 }
 
-
-static meterpair swrtbl[] = {
-	{0, 0},
-	{48, 12},
-	{80, 25},
-	{120, 50},
-	{255, 100}
-};
-//Get SWR-Meter (0000=SWR1.0, 0048=SWR1.5, 0080=SWR2.0, 0120=SWR3.0)
-
 int RIG_Xiegu_G90::get_swr()
 {
-	string cstr = "\x15\x12";
-	string resp = pre_fm;
-	resp.append(cstr);
-	cmd = pre_to;
-	cmd.append(cstr);
-	cmd.append( post );
-	int mtr= -1;
-	if (waitFOR(9, "get SWR")) {
-		size_t p = replystr.rfind(resp);
-		if (p != string::npos) {
-			if (replystr[p + 7] == '\xFD') {
-				mtr = hexval(replystr[p + 6]);
-			} else {
-				mtr = 100 * hexval(replystr[p + 6]) + hexval(replystr[p + 7]);
-			}
-			size_t i = 0;
-			for (i = 0; i < sizeof(swrtbl) / sizeof(meterpair) - 1; i++)
-				if (mtr >= swrtbl[i].mtr && mtr < swrtbl[i+1].mtr)
-					break;
-			if (mtr < 0) mtr = 0;
-			if (mtr > 255) mtr = 255;
-			mtr = (int)ceil(smtrtbl[i].val + 
-				(smtrtbl[i+1].val - smtrtbl[i].val)*(mtr - smtrtbl[i].mtr)/(smtrtbl[i+1].mtr - smtrtbl[i].mtr));
-			if (mtr > 100) mtr = 100;
-		}
-	}
-	get_trace(2, "get_swr()", str2hex(replystr.c_str(), replystr.length()));
-	return mtr;
+    string cstr = "\x15\x12";
+    string resp = pre_fm;
+    resp.append(cstr);
+    cmd = pre_to;
+    cmd.append(cstr);
+    cmd.append( post );
+    int mtr= -1;
+    if (waitFOR(6, "get SWR")) {
+        get_trace(2, "get_swr()", str2hex(replystr.c_str(), replystr.length()));
+        size_t p = replystr.rfind(resp);
+        if (p != string::npos) {
+            mtr = ceil(fm_bcd(replystr.substr(p + 6), 1) );
+        }
+    }
+    mtr = (int)ceil(mtr /10);
+    return mtr;
 }
+
 
 void RIG_Xiegu_G90::set_noise(bool val)
 {  
@@ -927,22 +874,34 @@ void RIG_Xiegu_G90::get_band_selection(int v)
 	int bandfreq, bandmode;
 	switch (v) {
 		default:
-		case 1:  bandfreq = progStatus.f160; bandmode = progStatus.m160; break;
-		case 2:  bandfreq = progStatus.f80;  bandmode = progStatus.m80;  break;
-		case 3:  bandfreq = progStatus.f40;  bandmode = progStatus.m40;  break;
-		case 4:  bandfreq = progStatus.f30;  bandmode = progStatus.m30;  break;
-		case 5:  bandfreq = progStatus.f20;  bandmode = progStatus.m20;  break;
-		case 6:  bandfreq = progStatus.f17;  bandmode = progStatus.m17;  break;
-		case 7:  bandfreq = progStatus.f15;  bandmode = progStatus.m15;  break;
-		case 8:  bandfreq = progStatus.f12;  bandmode = progStatus.m12;  break;
-		case 9:  bandfreq = progStatus.f10;  bandmode = progStatus.m10;  break;
-		case 10: bandfreq = progStatus.f6;   bandmode = progStatus.m6;   break;
-//		case 11: bandfreq = progStatus.f2;   bandmode = progStatus.m2;   break;
-//		case 12: bandfreq = progStatus.f70;  bandmode = progStatus.m70;  break;
-		case 13: bandfreq = progStatus.fgen; bandmode = progStatus.mgen; break;
+		case 1: bandfreq = progStatus.f160;
+				bandmode = progStatus.m160;
+				break;
+		case 2: bandfreq = progStatus.f80;
+				bandmode = progStatus.m80;
+				break;
+		case 3: bandfreq = progStatus.f40;
+				bandmode = progStatus.m40;
+				break;
+		case 4: bandfreq = progStatus.f30;
+				bandmode = progStatus.m30;
+				break;
+		case 5: bandfreq = 14074000L;
+				bandmode = progStatus.m20;
+				break;
+		case 6: bandfreq = progStatus.f17;
+				bandmode = progStatus.m17;
+				break;
+		case 7: bandfreq = progStatus.f15;
+				bandmode = progStatus.m15;
+				break;
+		case 8: bandfreq = progStatus.f12;
+				bandmode = progStatus.m12;
+				break;
+		case 9: bandfreq = progStatus.f10;
+				bandmode = progStatus.m10;
+				break;
 	}
-	if (bandmode < 0) bandmode = 0;
-	if (bandmode > 4) bandmode = 0;
 	if (useB) {
 		set_vfoB(bandfreq);
 		set_modeB(bandmode);
@@ -955,26 +914,40 @@ void RIG_Xiegu_G90::get_band_selection(int v)
 
 void RIG_Xiegu_G90::set_band_selection(int v)
 {
+
 	switch (v) {
 		default:
-		case 1:  progStatus.f160 = vfo->freq; progStatus.m160 = vfo->imode; break;
-		case 2:  progStatus.f80 = vfo->freq;  progStatus.m80 = vfo->imode;  break;
-		case 3:  progStatus.f40 = vfo->freq;  progStatus.m40 = vfo->imode;  break;
-		case 4:  progStatus.f30 = vfo->freq;  progStatus.m30 = vfo->imode;  break;
-		case 5:  progStatus.f20 = vfo->freq;  progStatus.m20 = vfo->imode;  break;
-		case 6:  progStatus.f17 = vfo->freq;  progStatus.m17 = vfo->imode;  break;
-		case 7:  progStatus.f15 = vfo->freq;  progStatus.m15 = vfo->imode;  break;
-		case 8:  progStatus.f12 = vfo->freq;  progStatus.m12 = vfo->imode;  break;
-		case 9:  progStatus.f10 = vfo->freq;  progStatus.m10 = vfo->imode;  break;
-		case 10: progStatus.f6 = vfo->freq;   progStatus.m6 = vfo->imode;   break;
-//		case 11: progStatus.f2 = vfo->freq;   progStatus.m2 = vfo->imode;   break;
-//		case 12: progStatus.f70 = vfo->freq;  progStatus.m70 = vfo->imode;  break;
-		case 13: progStatus.fgen = vfo->freq; progStatus.mgen = vfo->imode; break;
+		case 1: progStatus.f160 = vfo->freq;
+				progStatus.m160 = vfo->imode;
+				break;
+		case 2: progStatus.f80 = vfo->freq;
+				progStatus.m80 = vfo->imode;
+				break;
+		case 3: progStatus.f40 = vfo->freq;
+				progStatus.m40 = vfo->imode;
+				break;
+		case 4: progStatus.f30 = vfo->freq;
+				progStatus.m30 = vfo->imode;
+				break;
+		case 5: progStatus.f20 = vfo->freq;
+				progStatus.m20 = vfo->imode;
+				break;
+		case 6: progStatus.f17 = vfo->freq;
+				progStatus.m17 = vfo->imode;
+				break;
+		case 7: progStatus.f15 = vfo->freq;
+				progStatus.m15 = vfo->imode;
+				break;
+		case 8: progStatus.f12 = vfo->freq;
+				progStatus.m12 = vfo->imode;
+				break;
+		case 9: progStatus.f10 = vfo->freq;
+				progStatus.m10 = vfo->imode;
+				break;
 	}
 	set_trace(1, "set_band_selection()");
 }
 
-static int agcval = 0;
 int  RIG_Xiegu_G90::get_agc()
 {
     cmd = pre_to;
@@ -1007,770 +980,8 @@ const char *RIG_Xiegu_G90::agc_label()
     return agcstrs[agcval];
 }
 
-int RIG_Xiegu_G90::agc_val()
+int  RIG_Xiegu_G90::agc_val()
 {
     return (agcval);
 }
-
-int RIG_Xiegu_G90::power_scale()
-{
-	return 10;
-}
-
-/*
-void RIG_Xiegu_G90::set_rf_gain(int val)
-{
-	cmd = pre_to;
-	cmd.append("\x14\x02");
-	cmd.append(bcd255(val));
-	cmd.append( post );
-	set_trace(2, "set_rf_gain()", str2hex(cmd.c_str(), cmd.length()));
-	waitFB("set RF");
-}
-
-int RIG_Xiegu_G90::get_rf_gain()
-{
-	int val = progStatus.rfgain;
-	string cstr = "\x14\x02";
-	string resp = pre_fm;
-	cmd = pre_to;
-	cmd.append(cstr).append(post);
-	resp.append(cstr);
-	if (waitFOR(9, "get RF")) {
-		size_t p = replystr.rfind(resp);
-		if (p != string::npos)
-			val = num100(replystr.substr(p + 6));
-	}
-	get_trace(2, "get_rf_gain()", str2hex(replystr.c_str(), replystr.length()));
-	return val;
-}
-
-void RIG_Xiegu_G90::get_rf_min_max_step(double &min, double &max, double &step)
-{
-	min = 0; max = 100; step = 1;
-}
-
-int RIG_Xiegu_G90::get_alc()
-{
-	string cstr = "\x15\x13";
-	string resp = pre_fm;
-	resp.append(cstr);
-	cmd = pre_to;
-	cmd.append(cstr);
-	cmd.append( post );
-	int mtr= -1;
-	if (waitFOR(9, "get alc")) {
-		size_t p = replystr.rfind(resp);
-		if (p != string::npos) {
-			mtr = fm_bcd(replystr.substr(p+6), 3);
-			mtr = (int)ceil(mtr /1.2);
-			if (mtr > 100) mtr = 100;
-		}
-	}
-	get_trace(2, "get_alc()", str2hex(replystr.c_str(), replystr.length()));
-	return mtr;
-}
-
-void RIG_Xiegu_G90::set_notch(bool on, int freq)
-{
-	int hexval;
-	switch (vfo->imode) {
-		default: case USB_g90:
-			hexval = freq - 1500;
-			break;
-		case LSB_g90:
-			hexval = 1500 - freq;
-			break;
-		case CW_g90:
-			if (CW_sense)
-				hexval = freq - progStatus.cw_spot_tone;
-			else
-				hexval = progStatus.cw_spot_tone - freq;
-			break;
-		case CWR_g90:
-			if (CW_sense)
-				hexval = progStatus.cw_spot_tone - freq;
-			else
-				hexval = freq - progStatus.cw_spot_tone;
-			break;
-	}
-
-	hexval /= 20;
-	hexval += 128;
-	if (hexval < 0) hexval = 0;
-	if (hexval > 255) hexval = 255;
-
-	cmd = pre_to;
-	cmd.append("\x16\x48");
-	cmd += on ? '\x01' : '\x00';
-	cmd.append(post);
-	waitFB("set notch");
-	set_trace(2, "set_notch() ", str2hex(cmd.c_str(), cmd.length()));
-
-	cmd = pre_to;
-	cmd.append("\x14\x0D");
-	cmd.append(to_bcd(hexval,3));
-	cmd.append(post);
-	waitFB("set notch val");
-	set_trace(2, "set_notch_val() ", str2hex(cmd.c_str(), cmd.length()));
-}
-
-bool RIG_Xiegu_G90::get_notch(int &val)
-{
-	bool on = false;
-	val = 1500;
-
-	string cstr = "\x16\x48";
-	string resp = pre_fm;
-	resp.append(cstr);
-	cmd = pre_to;
-	cmd.append(cstr);
-	cmd.append( post );
-	if (waitFOR(8, "get notch")) {
-		get_trace(2, "get_notch()", str2hex(replystr.c_str(), replystr.length()));
-		size_t p = replystr.rfind(resp);
-		if (p != string::npos)
-			on = replystr[p + 6];
-		cmd = pre_to;
-		resp = pre_fm;
-		cstr = "\x14\x0D";
-		cmd.append(cstr);
-		resp.append(cstr);
-		cmd.append(post);
-		if (waitFOR(9, "notch val")) {
-			get_trace(2, "get_notch_val() ", str2hex(replystr.c_str(), replystr.length()));
-			size_t p = replystr.rfind(resp);
-			if (p != string::npos) {
-				val = (int)ceil(fm_bcd(replystr.substr(p+6),3));
-				val -= 128;
-				val *= 20;
-				switch (vfo->imode) {
-					default: case USB_g90:
-						val = 1500 + val;
-						break;
-					case LSB:
-						val = 1500 - val;
-						break;
-					case CW_g90:
-						if (CW_sense)
-							val = progStatus.cw_spot_tone + val;
-						else
-							val = progStatus.cw_spot_tone - val;
-						break;
-					case CWR_g90:
-						if (CW_sense)
-							val = progStatus.cw_spot_tone - val;
-						else
-							val = progStatus.cw_spot_tone + val;
-						break;
-				}
-			}
-			get_trace(2, "get_notch_val() ", str2hex(replystr.c_str(), replystr.length()));
-		}
-	}
-	return on;
-}
-
-void RIG_Xiegu_G90::get_notch_min_max_step(int &min, int &max, int &step)
-{
-	switch (vfo->imode) {
-		default:
-		case USB_g90: case LSB_g90:
-			min = 0; max = 3000; step = 20; break;
-		case CW_g90: case CWR_g90:
-			min = progStatus.cw_spot_tone - 500;
-			max = progStatus.cw_spot_tone + 500;
-			step = 20;
-			break;
-	}
-}
-
-void RIG_Xiegu_G90::set_auto_notch(int val)
-{
-	cmd = pre_to;
-	cmd += '\x16';
-	cmd += '\x41';
-	cmd += val ? 0x01 : 0x00;
-	cmd.append( post );
-	waitFB("set AN");
-}
-
-int RIG_Xiegu_G90::get_auto_notch()
-{
-	string cstr = "\x16\x41";
-	string resp = pre_fm;
-	resp.append(cstr);
-	cmd = pre_to;
-	cmd.append(cstr);
-	cmd.append( post );
-	if (waitFOR(8, "get AN")) {
-		size_t p = replystr.rfind(resp);
-		if (p != string::npos) {
-			if (replystr[p+6] == 0x01) {
-				auto_notch_label("AN", true);
-				return true;
-			} else {
-				auto_notch_label("AN", false);
-				return false;
-			}
-		}
-	}
-	return progStatus.auto_notch;
-}
-
-void RIG_Xiegu_G90::set_if_shift(int val)
-{
-	int shift;
-	sh_ = val;
-	if (val == 0) sh_on_ = false;
-	else sh_on_ = true;
-
-	shift = 128 + val * 128 / 50;
-	if (shift < 0) shift = 0;
-	if (shift > 255) shift = 255;
-
-	cmd = pre_to;
-	cmd.append("\x14\x07");
-	cmd.append(to_bcd(shift, 3));
-	cmd.append(post);
-	waitFB("set IF inner");
-
-	cmd = pre_to;
-	cmd.append("\x14\x08");
-	cmd.append(to_bcd(shift, 3));
-	cmd.append(post);
-	waitFB("set IF outer");
-}
-
-bool RIG_Xiegu_G90::get_if_shift(int &val)
-{
-	val = sh_;
-	return sh_on_;
-}
-
-void RIG_Xiegu_G90::set_pbt_inner(int val)
-{
-	int shift = 128 + val * 128 / 50;
-	if (shift < 0) shift = 0;
-	if (shift > 255) shift = 255;
-
-	cmd = pre_to;
-	cmd.append("\x14\x07");
-	cmd.append(to_bcd(shift, 3));
-	cmd.append(post);
-	waitFB("set PBT inner");
-}
-
-void RIG_Xiegu_G90::set_pbt_outer(int val)
-{
-	int shift = 128 + val * 128 / 50;
-	if (shift < 0) shift = 0;
-	if (shift > 255) shift = 255;
-
-	cmd = pre_to;
-	cmd.append("\x14\x08");
-	cmd.append(to_bcd(shift, 3));
-	cmd.append(post);
-	waitFB("set PBT outer");
-}
-
-int RIG_Xiegu_G90::get_pbt_inner()
-{
-	int val = 0;
-	string cstr = "\x14\x07";
-	string resp = pre_fm;
-	resp.append(cstr);
-	cmd = pre_to;
-	cmd.append(cstr);
-	cmd.append( post );
-	if (waitFOR(9, "get pbt inner")) {
-		size_t p = replystr.rfind(resp);
-		if (p != string::npos) {
-			val = num100(replystr.substr(p+6));
-			val -= 50;
-		}
-	}
-	rig_trace(2, "get_pbt_inner()", str2hex(replystr.c_str(), replystr.length()));
-	return val;
-}
-
-int RIG_Xiegu_G90::get_pbt_outer()
-{
-	int val = 0;
-	string cstr = "\x14\x08";
-	string resp = pre_fm;
-	resp.append(cstr);
-	cmd = pre_to;
-	cmd.append(cstr);
-	cmd.append( post );
-	if (waitFOR(9, "get pbt outer")) {
-		size_t p = replystr.rfind(resp);
-		if (p != string::npos) {
-			val = num100(replystr.substr(p+6));
-			val -= 50;
-		}
-	}
-	rig_trace(2, "get_pbt_outer()", str2hex(replystr.c_str(), replystr.length()));
-	return val;
-}
-
-void RIG_Xiegu_G90::get_if_min_max_step(int &min, int &max, int &step)
-{
-	min = -50;
-	max = +50;
-	step = 1;
-}
-
-void RIG_Xiegu_G90::set_nb_level(int val)
-{
-	cmd = pre_to;
-	cmd.append("\x14\x12");
-	cmd.append(bcd255(val));
-	cmd.append( post );
-	set_trace(2, "set_nb_level()", str2hex(cmd.c_str(), cmd.length()));
-	waitFB("set NB level");
-}
-
-int  RIG_Xiegu_G90::get_nb_level()
-{
-	int val = progStatus.nb_level;
-	string cstr = "\x14\x12";
-	string resp = pre_fm;
-	resp.append(cstr);
-	cmd = pre_to;
-	cmd.append(cstr);
-	cmd.append(post);
-	if (waitFOR(9, "get NB level")) {
-		size_t p = replystr.rfind(resp);
-		if (p != string::npos)
-			val = num100(replystr.substr(p+6));
-	}
-	get_trace(2, "get_nb_level()", str2hex(replystr.c_str(), replystr.length()));
-	return val;
-}
-*/
-
-/*
-void RIG_Xiegu_G90::set_noise_reduction(int val)
-{
-	cmd = pre_to;
-	cmd.append("\x16\x40");
-	cmd += val ? 1 : 0;
-	cmd.append(post);
-	set_trace(2, "set_noise_reduction()", str2hex(cmd.c_str(), cmd.length()));
-	waitFB("set NR");
-}
-
-int RIG_Xiegu_G90::get_noise_reduction()
-{
-	string cstr = "\x16\x40";
-	string resp = pre_fm;
-	resp.append(cstr);
-	cmd = pre_to;
-	cmd.append(cstr);
-	cmd.append(post);
-	if (waitFOR(8, "get NR")) {
-		size_t p = replystr.rfind(resp);
-	get_trace(2, "get_noise_reduction()", str2hex(replystr.c_str(), replystr.length()));
-	if (p != string::npos)
-		return (replystr[p+6] ? 1 : 0);
-	}
-	return progStatus.noise_reduction;
-}
-
-void RIG_Xiegu_G90::set_noise_reduction_val(int val)
-{
-	cmd = pre_to;
-	cmd.append("\x14\x06");
-	val *= 16;
-	val += 8;
-	cmd.append(to_bcd(val, 3));
-	cmd.append(post);
-	set_trace(2, "set_noise_reduction_val()", str2hex(cmd.c_str(), cmd.length()));
-	waitFB("set NRval");
-}
-
-int RIG_Xiegu_G90::get_noise_reduction_val()
-{
-	int val = 0;
-	string cstr = "\x14\x06";
-	string resp = pre_fm;
-	resp.append(cstr);
-	cmd = pre_to;
-	cmd.append(cstr);
-	cmd.append(post);
-	if (waitFOR(9, "get NRval")) {
-		size_t p = replystr.rfind(resp);
-		if (p != string::npos) {
-			val = fm_bcd(replystr.substr(p+6),3);
-			val -= 8;
-			val /= 16;
-		}
-	}
-	get_trace(2, "get_nr_val()", str2hex(replystr.c_str(), replystr.length()));
-	return val;
-}
-
-
-// Read/Write band stack registers
-//
-// Read 23 bytes
-//
-//  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22
-// FE FE nn E0 1A 01 bd rn f5 f4 f3 f2 f1 mo fi fg t1 t2 t3 r1 r2 r3 FD
-// Write 23 bytes
-//
-// FE FE E0 nn 1A 01 bd rn f5 f4 f3 f2 f1 mo fi fg t1 t2 t3 r1 r2 r3 FD
-//
-// nn - CI-V address
-// bd - band selection 1/2/3
-// rn - register number 1/2/3
-// f5..f1 - frequency BCD reverse
-// mo - mode
-// fi - filter #
-// fg flags: x01 use Tx tone, x02 use Rx tone, x10 data mode
-// t1..t3 - tx tone BCD fwd
-// r1..r3 - rx tone BCD fwd
-//
-// FE FE E0 94 1A 01 06 01 70 99 08 18 00 01 03 10 00 08 85 00 08 85 FD
-//
-// band 6; freq 0018,089,970; USB; data mode; t 88.5; r 88.5
-
-void RIG_Xiegu_G90::setVfoAdj(double v)
-{
-	vfo_ = v;
-	cmd.assign(pre_to);
-	cmd.append("\x1A\x05");
-	cmd += '\x00';
-	cmd += '\x47';
-	cmd.append(bcd255(int(v)));
-	cmd.append(post);
-	waitFB("SET vfo adjust");
-	set_trace(2, "set_vfo_adj()", str2hex(cmd.c_str(), cmd.length()));
-}
-
-double RIG_Xiegu_G90::getVfoAdj()
-{
-	cmd.assign(pre_to);
-	cmd.append("\x1A\x05");
-	cmd += '\x00';
-	cmd += '\x47';
-	cmd.append(post);
-
-	if (waitFOR(11, "get vfo adj")) {
-		size_t p = replystr.find(pre_fm);
-		if (p != string::npos) {
-			vfo_ = num100(replystr.substr(p+8));
-		}
-	}
-	get_trace(2, "get_vfo_adj()", str2hex(replystr.c_str(), replystr.length()));
-	return vfo_;
-}
- 
-void RIG_Xiegu_G90::set_cw_qsk()
-{
-	int n = round(progStatus.cw_qsk * 10); // values 0-255
-	cmd.assign(pre_to).append("\x14\x0F");
-	cmd.append(to_bcd(n, 3));
-	cmd.append(post);
-	waitFB("Set cw qsk delay");
-}
-
-void RIG_Xiegu_G90::set_cw_spot_tone()
-{
-	cmd.assign(pre_to).append("\x14\x09"); // values 0=300Hz 255=900Hz
-	int n = round((progStatus.cw_spot_tone - 300) * 255.0 / 600.0);
-	if (n > 255) n = 255;
-	if (n < 0) n = 0;
-	cmd.append(to_bcd(n, 3));
-	cmd.append( post );
-	waitFB("SET cw spot tone");
-}
-
-void RIG_Xiegu_G90::set_cw_vol()
-{
-	cmd.assign(pre_to);
-	cmd.append("\x1A\x05");
-	cmd += '\x01';
-	cmd += '\x32';
-	cmd.append(to_bcd((int)(progStatus.cw_vol * 2.55), 3));
-	cmd.append( post );
-	set_trace(2, "set_cw_vol()", str2hex(cmd.c_str(), cmd.length()));
-	waitFB("SET cw sidetone volume");
-}
-
-void RIG_Xiegu_G90::set_xcvr_auto_on()
-{
-	cmd.clear();
-	int nr = progStatus.comm_baudrate == 6 ? 25 :
-			 progStatus.comm_baudrate == 5 ? 13 :
-			 progStatus.comm_baudrate == 4 ? 7 :
-			 progStatus.comm_baudrate == 3 ? 3 : 2;
-	cmd.append( nr, '\xFE');
-	cmd.append(pre_to);
-	cmd += '\x18'; cmd += '\x01';
-	cmd.append(post);
-	waitFB("Power ON", 200);
-	isett("Power ON");
-
-	for (int i = 0; i < 5000; i += 100) {
-		MilliSleep(100);
-		update_progress(100 * i / 5000);
-		Fl::awake();
-	}
-
-	cmd = pre_to;
-	cmd += '\x19'; cmd += '\x00';
-	cmd.append(post);
-	waitFOR(8, "get ID", 10000);
-	igett("get ID");
-}
-
-void RIG_Xiegu_G90::set_xcvr_auto_off()
-{
-	cmd.clear();
-	cmd.append(pre_to);
-	cmd += '\x18'; cmd += '\x00';
-	cmd.append(post);
-	waitFB("Power OFF", 200);
-	isett("Power OFF");
-}
-
-int RIG_Xiegu_G90::get_PTT()
-{
-	cmd = pre_to;
-	cmd += '\x1c'; cmd += '\x00';
-	string resp = pre_fm;
-	resp += '\x1c'; resp += '\x00';
-	cmd.append(post);
-	if (waitFOR(8, "get PTT")) {
-		igett("get_PTT()");
-		size_t p = replystr.rfind(resp);
-		if (p != string::npos)
-			ptt_ = replystr[p + 6];
-	}
-	return ptt_;
-}
-
-int RIG_Xiegu_G90::get_bwA()
-{
-	cmd = pre_to;
-	cmd.append("\x1a\x03");
-	cmd.append(post);
-	string resp = pre_fm;
-	resp.append("\x1a\x03");
-	if (waitFOR(8, "get bw A")) {
-		size_t p = replystr.rfind(resp);
-		A.iBW = fm_bcd(replystr.substr(p+6), 2);
-	}
-
-	return A.iBW;
-}
-
-void RIG_Xiegu_G90::set_bwA(int val)
-{
-	A.iBW = val;
-	cmd = pre_to;
-	cmd.append("\x1a\x03");
-	cmd.append(to_bcd(A.iBW, 2));
-	cmd.append(post);
-	waitFB("set bw A");
-}
-
-int RIG_Xiegu_G90::get_bwB()
-{
-	cmd = pre_to;
-	cmd.append("\x1a\x03");
-	cmd.append(post);
-	string resp = pre_fm;
-	resp.append("\x1a\x03");
-	if (waitFOR(8, "get bw B")) {
-		size_t p = replystr.rfind(resp);
-		B.iBW = fm_bcd(replystr.substr(p+6), 2);
-	}
-
-	return B.iBW;
-}
-
-void RIG_Xiegu_G90::set_bwB(int val)
-{
-	B.iBW = val;
-	cmd = pre_to;
-	cmd.append("\x1a\x03");
-	cmd.append(to_bcd(B.iBW, 2));
-	cmd.append(post);
-	waitFB("set bw B");
-}
-
-std::string RIG_Xiegu_G90::get_BANDWIDTHS()
-{
-	stringstream s;
-	for (int i = 0; i < NUM_MODES; i++)
-		s << mode_bwA[i] << " ";
-	for (int i = 0; i < NUM_MODES; i++)
-		s << mode_bwB[i] << " ";
-	return s.str();
-}
-
-void RIG_Xiegu_G90::set_BANDWIDTHS(std::string s)
-{
-	stringstream strm;
-	strm << s;
-	for (int i = 0; i < NUM_MODES; i++)
-		strm >> mode_bwA[i];
-	for (int i = 0; i < NUM_MODES; i++)
-		strm >> mode_bwB[i];
-}
-
-int RIG_Xiegu_G90::adjust_bandwidth(int m)
-{
-	switch (m) {
-		case AM_g90:
-			bandwidths_ = Xiegu_G90_am_bws;
-			bw_vals_ = Xiegu_G90_bw_vals_AM;
-			return 29;
-			break;
-		case USB_g90: case LSB_g90:
-			bandwidths_ = Xiegu_G90_ssb_bws;
-			bw_vals_ = Xiegu_G90_vals_ssb_bws;
-			return 34;
-			break;
-		case CW_g90: case CWR_g90:
-			bandwidths_ = Xiegu_G90_ssb_bws;
-			bw_vals_ = Xiegu_G90_vals_ssb_bws;
-			return 10;
-			break;
-		default:
-			bandwidths_ = Xiegu_G90_ssb_bws;
-			bw_vals_ = Xiegu_G90_vals_ssb_bws;
-			return 34;
-	}
-	return 0;
-}
-
-const char ** RIG_Xiegu_G90::bwtable(int m)
-{
-	const char **table;
-	switch (m) {
-		case AM_g90:
-			table = Xiegu_G90_am_bws;
-			break;
-		case CW_g90: case CWR_g90:
-		case USB_g90: case LSB_g90:
-		default:
-			table = Xiegu_G90_ssb_bws;
-	}
-	return table;
-}
-
-int RIG_Xiegu_G90::def_bandwidth(int m)
-{
-	return adjust_bandwidth(m);
-}
-
-void RIG_Xiegu_G90::set_mic_gain(int val)
-{
-	cmd = pre_to;
-	cmd.append("\x14\x0B");
-	cmd.append(bcd255(val));
-	cmd.append( post );
-	set_trace(2, "set_mic_gain()", str2hex(cmd.c_str(), cmd.length()));
-	waitFB("set mic gain");
-}
-
-int RIG_Xiegu_G90::get_mic_gain()
-{
-	int val = progStatus.volume;
-	string cstr = "\x14\x0B";
-	string resp = pre_fm;
-	resp.append(cstr);
-	cmd = pre_to;
-	cmd.append(cstr);
-	cmd.append( post );
-	if (waitFOR(9, "get mic gain")) {
-		size_t p = replystr.rfind(resp);
-		if (p != string::npos)
-			val = num100(replystr.substr(p+6));
-	}
-	get_trace(2, "get_mic_gain()", str2hex(replystr.c_str(), replystr.length()));
-	return val;
-}
-
-void RIG_Xiegu_G90::get_mic_gain_min_max_step(int &min, int &max, int &step)
-{
-	min = 0; max = 100; step = 1;
-}
-
-int RIG_Xiegu_G90::next_preamp()
-{
-	if (Xiegu_G90onA) {
-		if (A.freq > 100000000) {
-			if (preamp_level) return 0;
-			return 1;
-		} else {
-			switch (preamp_level) {
-			case 0: return 1;
-			case 1: return 2;
-			case 2: return 0;
-			}
-		}
-	} else {
-		if (B.freq > 100000000) {
-			if (preamp_level) return 0;
-			return 1;
-		} else {
-			switch (preamp_level) {
-			case 0: return 1;
-			case 1: return 2;
-			case 2: return 0;
-			}
-		}
-	}
-	return 0;
-}
-
-void RIG_Xiegu_G90::set_vox_onoff()
-{
-	if (progStatus.vox_onoff) {
-		cmd.assign(pre_to).append("\x16\x46\x01");
-		cmd.append( post );
-		waitFB("set vox ON");
-	} else {
-		cmd.assign(pre_to).append("\x16\x46");
-		cmd += '\x00';
-		cmd.append( post );
-		waitFB("set vox OFF");
-	}
-}
-
-void RIG_Xiegu_G90::set_vox_gain()
-{
-	cmd.assign(pre_to).append("\x1A\x05"); // values 0-255 = 0 - 100%
-	cmd +='\x01';
-	cmd +='\x63';
-	cmd.append(to_bcd((int)(progStatus.vox_gain * 2.55), 3));
-	cmd.append( post );
-	waitFB("SET vox gain");
-}
-
-void RIG_Xiegu_G90::set_vox_anti()
-{
-	cmd.assign(pre_to).append("\x1A\x05");	// values 0-255 = 0 - 100%
-	cmd +='\x01';
-	cmd +='\x64';
-	cmd.append(to_bcd((int)(progStatus.vox_anti * 2.55), 3));
-	cmd.append( post );
-	waitFB("SET anti-vox");
-}
-
-void RIG_Xiegu_G90::set_vox_hang()
-{
-	cmd.assign(pre_to).append("\x1A\x05");	// values 00-20 = 0.0 - 2.0 sec
-	cmd +='\x01';
-	cmd +='\x65';
-	cmd.append(to_bcd((int)(progStatus.vox_hang / 10 ), 2));
-	cmd.append( post );
-	waitFB("SET vox hang");
-}
-*/
 

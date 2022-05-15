@@ -468,7 +468,7 @@ Fl_Group *small_main_group(int X, int Y, int W, int H)
 	btnAttenuator->labelsize(12);
 	btnAttenuator->callback((Fl_Callback*)cb_btnAttenuator);
 
-	btnPreamp = new Fl_Light_Button(93, 325, 60, 18, _("PRE"));
+	btnPreamp = new Fl_Light_Button(93, 325, 80, 18, _("PRE"));
 	btnPreamp->tooltip(_("Preamp On/Off"));
 	btnPreamp->down_box(FL_THIN_DOWN_BOX);
 	btnPreamp->labelsize(12);
@@ -486,14 +486,14 @@ Fl_Group *small_main_group(int X, int Y, int W, int H)
 	btnAutoNotch->labelsize(12);
 	btnAutoNotch->callback((Fl_Callback*)cb_btnAutoNotch);
 
-	btn_tune_on_off = new Fl_Light_Button(294, 325, 20, 18, "");
+	btn_tune_on_off = new Fl_Light_Button(185, 325, 60, 18, "Tuner");
 	btn_tune_on_off->tooltip("Tuner On/Off");
 	btn_tune_on_off->callback((Fl_Callback*)cb_btn_tune_on_off);
 
 	btnTune = new Fl_Button(
-		btn_tune_on_off->x() + btn_tune_on_off->w(),
-		btn_tune_on_off->y(), 40, 18, _("Tune"));
-	btnTune->tooltip(_("Manual Tune"));
+		btn_tune_on_off->x() + btn_tune_on_off->w()+5,
+		btn_tune_on_off->y(), 50, 18, _("Tune"));
+	btnTune->tooltip(_("Automatic Tune"));
 	btnTune->callback((Fl_Callback*)cb_btnTune);
 
 	btnPTT = new Fl_Light_Button(362, 325, 60, 18, _("PTT"));
