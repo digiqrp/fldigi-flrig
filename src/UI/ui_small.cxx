@@ -468,7 +468,7 @@ Fl_Group *small_main_group(int X, int Y, int W, int H)
 	btnAttenuator->labelsize(12);
 	btnAttenuator->callback((Fl_Callback*)cb_btnAttenuator);
 
-	btnPreamp = new Fl_Light_Button(93, 325, 80, 18, _("PRE"));
+	btnPreamp = new Fl_Light_Button(93, 325, 60, 18, _("PRE"));
 	btnPreamp->tooltip(_("Preamp On/Off"));
 	btnPreamp->down_box(FL_THIN_DOWN_BOX);
 	btnPreamp->labelsize(12);

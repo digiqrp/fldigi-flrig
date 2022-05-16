@@ -3,6 +3,7 @@
 //              David Freese, W1HKJ
 //              Mark Gregory, G4LCH
 //
+// Version 1.0.8
 // This file is part of flrig.
 //
 // flrig is free software; you can redistribute it and/or modify
@@ -505,9 +506,9 @@ int RIG_Xiegu_G90::get_preamp()
 		if (p != string::npos)
 			preamp_level = replystr[p+6];
 		if (preamp_level == 1)
-			preamp_label("PRE ON", true);
+			preamp_label("PRE", true);
 		else
-			preamp_label("PRE OFF", false);
+			preamp_label("PRE", false);
 	}
 	return preamp_level;
 }
