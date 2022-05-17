@@ -374,7 +374,7 @@ Fl_Group *small_main_group(int X, int Y, int W, int H)
 	btn_KX3_swapAB->callback((Fl_Callback*)cb_btn_KX3_swapAB);
 	btn_KX3_swapAB->hide();
 
-	btnAswapB = new Fl_Button(318, 62, 52, 20, _("A<->B"));
+	btnAswapB = new Fl_Button(318, 62, 45, 20, _("A-B"));
 	btnAswapB->tooltip(_("Left click:Swap A/B\nRight click:Copy A to B"));
 	btnAswapB->down_box(FL_DOWN_BOX);
 	btnAswapB->labelsize(12);
@@ -443,7 +443,8 @@ Fl_Group *small_main_group(int X, int Y, int W, int H)
 	opDSP_hi->hide();
 	opDSP_hi->end();
 
-	opMODE = new Fl_ComboBox(318, 84, 105, 18, _("Mode"));
+	opMODE = new Fl_ComboBox(366, 62, 58, 20,
+                             _("Mode"));
 	opMODE->tooltip(_("Select transceiver operating mode"));
 	opMODE->box(FL_NO_BOX);
 	opMODE->color(FL_BACKGROUND2_COLOR);
