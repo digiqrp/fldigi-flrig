@@ -575,7 +575,7 @@ struct meterpair {int mtr; float val;};
 static meterpair pwrtbl[] = { 
 { 00, 1 },
 { 15, 2 },
-{ 26, 3 },
+{ 27, 3 },
 { 52, 4 },
 { 65, 5 },
 { 78, 6 },
@@ -597,12 +597,15 @@ static meterpair pwrtbl[] = {
 
 void RIG_Xiegu_G90::set_power_control(double val)
 {
+
+	cout << "GET PWR"<<  val << endl;  
 	cmd = pre_to;
 	cmd.append("\x14\x0A");
 	int p = 0;
 	for (int n = 0; n < 20; n++){
 		if (val <= pwrtbl[n].val) {
 			p = pwrtbl[n].mtr;
+			cout << "SET PWR"<<  p << endl; 
 			break;
 		}
 	}
@@ -639,7 +642,7 @@ int RIG_Xiegu_G90::get_power_control()
 			break;
 		}
 	}
-    cout << "GET PWR"<<  str2hex(replystr.c_str(), replystr.length()) << endl;  
+    //cout << "GET PWR"<<  str2hex(replystr.c_str(), replystr.length()) << endl;  
 	get_trace(2, "get_power_control()", str2hex(replystr.c_str(), replystr.length()));
 
 	return pwr;
