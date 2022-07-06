@@ -573,9 +573,9 @@ struct meterpair {int mtr; float val;};
 
 // Exact power matches as verified with RIG
 static meterpair pwrtbl[] = { 
-{ 13, 1 },
-{ 26, 2 },
-{ 39, 3 },
+{ 00, 1 },
+{ 15, 2 },
+{ 26, 3 },
 { 52, 4 },
 { 65, 5 },
 { 78, 6 },
@@ -622,7 +622,7 @@ int RIG_Xiegu_G90::get_power_control()
 	cmd = pre_to;
 	cmd.append(cstr).append(post);
 	resp.append(cstr);
-	if (waitFOR(9, "get power")) {
+	if (waitFOR(5, "get power")) {	
 		size_t p = replystr.rfind(resp);
 		if (p != string::npos) {
 			if (replystr[p + 7] == '\xFD') {
@@ -639,7 +639,7 @@ int RIG_Xiegu_G90::get_power_control()
 			break;
 		}
 	}
-
+    cout << "GET PWR"<<  str2hex(replystr.c_str(), replystr.length()) << endl;  
 	get_trace(2, "get_power_control()", str2hex(replystr.c_str(), replystr.length()));
 
 	return pwr;
