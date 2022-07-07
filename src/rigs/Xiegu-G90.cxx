@@ -597,15 +597,12 @@ static meterpair pwrtbl[] = {
 
 void RIG_Xiegu_G90::set_power_control(double val)
 {
-
-	cout << "GET PWR"<<  val << endl;  
 	cmd = pre_to;
 	cmd.append("\x14\x0A");
 	int p = 0;
 	for (int n = 0; n < 20; n++){
 		if (val <= pwrtbl[n].val) {
 			p = pwrtbl[n].mtr;
-			cout << "SET PWR"<<  p << endl; 
 			break;
 		}
 	}
