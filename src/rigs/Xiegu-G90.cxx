@@ -3,7 +3,7 @@
 //              David Freese, W1HKJ
 //              Mark Gregory, G4LCH
 //
-// Version 1.0.8
+// Version 1.0.9
 // This file is part of flrig.
 //
 // flrig is free software; you can redistribute it and/or modify
@@ -17,7 +17,7 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// aunsigned long int with this program.  If not, see <http://www.gnu.org/licenses/>.
+// with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ----------------------------------------------------------------------------
 
 #include "Xiegu-G90.h"
