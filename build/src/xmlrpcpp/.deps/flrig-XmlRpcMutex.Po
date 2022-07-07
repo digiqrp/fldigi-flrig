@@ -1,5 +1,0 @@
-xmlrpcpp/flrig-XmlRpcMutex.o: \
- /home/mag/Projects/fldigi-flrig/src/xmlrpcpp/XmlRpcMutex.cpp \
- /usr/include/stdc-predef.h
-
-/usr/include/stdc-predef.h:
