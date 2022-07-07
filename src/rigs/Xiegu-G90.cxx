@@ -595,6 +595,30 @@ static meterpair pwrtbl[] = {
 { 255, 20 }
 };
 
+/*
+1W = xFE xFE x88 xE0 x14 x0A x00 x00 xFD
+2W = xFE xFE x88 xE0 x14 x0A x00 x13 xFD
+3W = xFE xFE x88 xE0 x14 x0A x00 x26 xFD
+4W = xFE xFE x88 xE0 x14 x0A x00 x40 xFD
+5W = xFE xFE x88 xE0 x14 x0A x00 x53 xFD
+6W = xFE xFE x88 xE0 x14 x0A x00 x67 xFD
+7W = xFE xFE x88 xE0 x14 x0A x00 x80 xFD
+8W = xFE xFE x88 xE0 x14 x0A x00 x93 xFD
+9W = xFE xFE x88 xE0 x14 x0A x01 x07 xFD
+10W = xFE xFE x88 xE0 x14 x0A x01 x20 xFD
+11W = xFE xFE x88 xE0 x14 x0A x01 x34 xFD
+12W = xFE xFE x88 xE0 x14 x0A x01 x47 xFD
+13W = xFE xFE x88 xE0 x14 x0A x01 x61 xFD
+14W = xFE xFE x88 xE0 x14 x0A x01 x74 xFD
+15W = xFE xFE x88 xE0 x14 x0A x01 x87 xFD
+16W = xFE xFE x88 xE0 x14 x0A x02 x01 xFD
+17W = xFE xFE x88 xE0 x14 x0A x02 x14 xFD
+18W = xFE xFE x88 xE0 x14 x0A x02 x28 xFD
+19W = xFE xFE x88 xE0 x14 x0A x02 x41 xFD
+20W = xFE xFE x88 xE0 x14 x0A x02 x55 xFD
+*/
+
+
 void RIG_Xiegu_G90::set_power_control(double val)
 {
 	cmd = pre_to;
@@ -639,9 +663,7 @@ int RIG_Xiegu_G90::get_power_control()
 			break;
 		}
 	}
-    //cout << "GET PWR"<<  str2hex(replystr.c_str(), replystr.length()) << endl;  
 	get_trace(2, "get_power_control()", str2hex(replystr.c_str(), replystr.length()));
-
 	return pwr;
 }
 
@@ -650,28 +672,6 @@ void RIG_Xiegu_G90::get_pc_min_max_step(double &min, double &max, double &step)
 	min = 1; max = 20; step = 1;
 }
 
-/*
-1W = xFE xFE x88 xE0 x14 x0A x00 x00 xFD
-2W = xFE xFE x88 xE0 x14 x0A x00 x13 xFD
-3W = xFE xFE x88 xE0 x14 x0A x00 x26 xFD
-4W = xFE xFE x88 xE0 x14 x0A x00 x40 xFD
-5W = xFE xFE x88 xE0 x14 x0A x00 x53 xFD
-6W = xFE xFE x88 xE0 x14 x0A x00 x67 xFD
-7W = xFE xFE x88 xE0 x14 x0A x00 x80 xFD
-8W = xFE xFE x88 xE0 x14 x0A x00 x93 xFD
-9W = xFE xFE x88 xE0 x14 x0A x01 x07 xFD
-10W = xFE xFE x88 xE0 x14 x0A x01 x20 xFD
-11W = xFE xFE x88 xE0 x14 x0A x01 x34 xFD
-12W = xFE xFE x88 xE0 x14 x0A x01 x47 xFD
-13W = xFE xFE x88 xE0 x14 x0A x01 x61 xFD
-14W = xFE xFE x88 xE0 x14 x0A x01 x74 xFD
-15W = xFE xFE x88 xE0 x14 x0A x01 x87 xFD
-16W = xFE xFE x88 xE0 x14 x0A x02 x01 xFD
-17W = xFE xFE x88 xE0 x14 x0A x02 x14 xFD
-18W = xFE xFE x88 xE0 x14 x0A x02 x28 xFD
-19W = xFE xFE x88 xE0 x14 x0A x02 x41 xFD
-20W = xFE xFE x88 xE0 x14 x0A x02 x55 xFD
-*/
 
 int RIG_Xiegu_G90::get_power_out(void)
 {
